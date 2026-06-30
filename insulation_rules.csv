@@ -1,0 +1,4 @@
+﻿Enabled,RuleId,ElementType,System,Level,Size,ThicknessMM,InsulationTypeName,Priority,Note
+TRUE,R001,Pipe,Heating Supply,02.OG,,30,Mineral Wool,1,Pipe insulation rule
+TRUE,R002,Pipe Fitting,Heating Supply,02.OG,,30,Mineral Wool,2,Pipe fitting rule
+TRUE,R003,Duct,Supply Air,,,40,Duct Insulation,3,Duct insulation rule
