@@ -1,0 +1,368 @@
+<Window
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Insulation Rule Editor"
+    Height="920"
+    Width="1580"
+    MinHeight="780"
+    MinWidth="1280"
+    WindowStartupLocation="CenterScreen"
+    ResizeMode="CanResize"
+    Background="#F4F6F8"
+    FontFamily="Segoe UI"
+    FontSize="12">
+
+    <!--
+        GHI CHÚ TIẾNG VIỆT:
+        - File này là giao diện WPF cho pyRevit IronPython 2.7.
+        - Không dùng x:Class để pyRevit forms.WPFWindow load được trực tiếp.
+        - UI dùng modeless window, script.py sẽ gọi window.Show(), không dùng ShowDialog().
+        - Bảng Parameter Column Mapping cho phép người dùng tự tạo cột rule động.
+        - Bảng Rule DataGrid trong XAML để trống cột, script.py sẽ tự sinh cột cố định + cột động.
+        - Tab Active View Elements cũng để trống cột, script.py sẽ tự sinh cột preview.
+    -->
+
+    <Window.Resources>
+        <Style TargetType="GroupBox">
+            <Setter Property="Margin" Value="6"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="BorderBrush" Value="#D0D7DE"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <Style TargetType="Button">
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="MinWidth" Value="96"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="Padding" Value="8,2"/>
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style TargetType="DataGrid">
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="AutoGenerateColumns" Value="False"/>
+            <Setter Property="CanUserAddRows" Value="False"/>
+            <Setter Property="CanUserDeleteRows" Value="False"/>
+            <Setter Property="CanUserResizeColumns" Value="True"/>
+            <Setter Property="CanUserSortColumns" Value="True"/>
+            <Setter Property="SelectionUnit" Value="FullRow"/>
+            <Setter Property="GridLinesVisibility" Value="All"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+            <Setter Property="RowHeaderWidth" Value="0"/>
+            <Setter Property="AlternatingRowBackground" Value="#F8FAFC"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#D0D7DE"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- HEADER -->
+        <Border Grid.Row="0"
+                Background="#111827"
+                CornerRadius="4"
+                Padding="12"
+                Margin="0,0,0,8">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Left">
+                    <TextBlock Text="Insulation Rule Editor"
+                               Foreground="White"
+                               FontSize="18"
+                               FontWeight="SemiBold"/>
+
+                    <TextBlock Text="Dynamic parameter mapping, Revit dropdown values, modeless WPF and ExternalEvent"
+                               Foreground="#CBD5E1"
+                               Margin="0,3,0,0"/>
+                </StackPanel>
+
+                <TextBlock DockPanel.Dock="Right"
+                           Text="pyRevit Modeless"
+                           Foreground="#CBD5E1"
+                           VerticalAlignment="Center"/>
+            </DockPanel>
+        </Border>
+
+        <TabControl Grid.Row="1" x:Name="tabMain">
+
+            <!-- TAB 1: RULE EDITOR -->
+            <TabItem Header="Rule Editor">
+                <Grid Margin="4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="230"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- CSV PATH + ACTION BUTTONS -->
+                    <GroupBox Grid.Row="0" Header="CSV Files and Actions">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="135"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="44"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Mapping CSV" VerticalAlignment="Center" Margin="4"/>
+                            <TextBox Grid.Row="0" Grid.Column="1" x:Name="txtMappingCsvPath"/>
+                            <Button Grid.Row="0" Grid.Column="2" x:Name="btnBrowseMappingCsv" Content="..." MinWidth="34"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Rule CSV" VerticalAlignment="Center" Margin="4"/>
+                            <TextBox Grid.Row="1" Grid.Column="1" x:Name="txtRuleCsvPath"/>
+                            <Button Grid.Row="1" Grid.Column="2" x:Name="btnBrowseRuleCsv" Content="..." MinWidth="34"/>
+
+                            <StackPanel Grid.Row="0" Grid.RowSpan="2" Grid.Column="3" Orientation="Horizontal">
+                                <Button x:Name="btnLoadAll" Content="Load All CSV"/>
+                                <Button x:Name="btnSaveAll" Content="Save All CSV"/>
+                                <Button x:Name="btnSaveAllAs" Content="Save All As"/>
+                                <Button x:Name="btnValidate" Content="Validate"/>
+                                <Button x:Name="btnRefreshDropdowns" Content="Refresh Dropdown Values"/>
+
+                                <TextBlock Text="Apply Scope" VerticalAlignment="Center" Margin="12,0,2,0"/>
+                                <ComboBox x:Name="cmbApplyScope" Width="115" SelectedIndex="0">
+                                    <ComboBoxItem Content="Active View"/>
+                                    <ComboBoxItem Content="Selection"/>
+                                </ComboBox>
+
+                                <Button x:Name="btnApplyRules" Content="Apply Rules"/>
+                            </StackPanel>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4"
+                                       Text="Save All keeps mapping CSV and rule CSV synchronized. Empty rule cells are skipped. Disabled mappings are ignored."
+                                       Foreground="#64748B" Margin="4,6,4,0"/>
+                        </Grid>
+                    </GroupBox>
+
+                    <!-- PARAMETER COLUMN MAPPING -->
+                    <GroupBox Grid.Row="1" Header="Parameter Column Mapping">
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,6">
+                                <Button x:Name="btnAddMapping" Content="Add Parameter Column"/>
+                                <Button x:Name="btnDeleteMapping" Content="Delete Parameter Column"/>
+                                <Button x:Name="btnRenameMapping" Content="Rename Rule Column"/>
+                                <Button x:Name="btnMoveMappingLeft" Content="Move Column Left"/>
+                                <Button x:Name="btnMoveMappingRight" Content="Move Column Right"/>
+                                <Button x:Name="btnRebuildColumns" Content="Rebuild Rule Columns"/>
+                                <Button x:Name="btnValidateMapping" Content="Validate Mapping"/>
+                            </StackPanel>
+
+                            <DataGrid x:Name="dgMapping"
+                                      AutoGenerateColumns="False"
+                                      ItemsSource="{Binding Mappings}"
+                                      SelectedItem="{Binding SelectedMapping}"
+                                      SelectionMode="Extended"
+                                      CanUserAddRows="False"
+                                      CanUserDeleteRows="False"
+                                      CanUserResizeColumns="True"
+                                      CanUserSortColumns="True">
+
+                                <DataGrid.Columns>
+                                    <DataGridCheckBoxColumn Header="Enabled"
+                                                            Binding="{Binding Enabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                            Width="75"/>
+
+                                    <DataGridTextColumn Header="RuleColumnName"
+                                                        Binding="{Binding RuleColumnName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                        Width="160"/>
+
+                                    <DataGridTemplateColumn Header="RevitFieldName" Width="220">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <ComboBox IsEditable="True"
+                                                          Text="{Binding RevitFieldName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                          ItemsSource="{Binding DataContext.RevitFieldNameOptions, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+                                    <DataGridTemplateColumn Header="Operator" Width="150">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <ComboBox IsEditable="False"
+                                                          SelectedItem="{Binding Operator, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                          ItemsSource="{Binding DataContext.OperatorOptions, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+                                    <DataGridTemplateColumn Header="ValueSource" Width="160">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <ComboBox IsEditable="False"
+                                                          SelectedItem="{Binding ValueSource, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                          ItemsSource="{Binding DataContext.ValueSourceOptions, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+                                    <DataGridTemplateColumn Header="ValueType" Width="130">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <ComboBox IsEditable="False"
+                                                          SelectedItem="{Binding ValueType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                          ItemsSource="{Binding DataContext.ValueTypeOptions, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+                                    <DataGridTextColumn Header="Note"
+                                                        Binding="{Binding Note, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                        Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </GroupBox>
+
+                    <GridSplitter Grid.Row="2" Height="6" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="#CBD5E1"/>
+
+                    <!-- RULE DATA GRID: COLUMNS ARE GENERATED BY script.py -->
+                    <GroupBox Grid.Row="3" Header="Rule DataGrid - dynamic columns from mapping">
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,6">
+                                <Button x:Name="btnAddRule" Content="Add Rule"/>
+                                <Button x:Name="btnDeleteRule" Content="Delete Rule"/>
+                                <Button x:Name="btnDuplicateRule" Content="Duplicate Rule"/>
+                                <Button x:Name="btnRefreshRuleGrid" Content="Refresh"/>
+
+                                <TextBlock Text="Search Rule" VerticalAlignment="Center" Margin="12,0,2,0"/>
+                                <TextBox x:Name="txtRuleSearch" Width="260" ToolTip="Search in Rule DataGrid"/>
+                                <Button x:Name="btnClearRuleSearch" Content="Clear Search" MinWidth="90"/>
+
+                                <TextBlock Text="Fixed columns + dynamic parameter columns. Blank cells are skipped. Refresh rebuilds columns without reloading CSV."
+                                           VerticalAlignment="Center" Foreground="#64748B" Margin="12,0,0,0"/>
+                            </StackPanel>
+
+                            <DataGrid x:Name="dgRules"
+                                      AutoGenerateColumns="False"
+                                      ItemsSource="{Binding Rules}"
+                                      SelectionMode="Extended"
+                                      FrozenColumnCount="3"
+                                      CanUserAddRows="False"
+                                      CanUserDeleteRows="False"
+                                      CanUserResizeColumns="True"
+                                      CanUserSortColumns="True"
+                                      HorizontalScrollBarVisibility="Auto"
+                                      VerticalScrollBarVisibility="Auto"/>
+                        </DockPanel>
+                    </GroupBox>
+                </Grid>
+            </TabItem>
+
+            <!-- TAB 2: ACTIVE VIEW ELEMENTS -->
+            <TabItem Header="Active View Elements">
+                <Grid Margin="4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <GroupBox Grid.Row="0" Header="Active View Preview">
+                        <DockPanel>
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                                <Button x:Name="btnRefreshElements" Content="Refresh Elements"/>
+
+                                <TextBlock Text="Element Filter"
+                                           VerticalAlignment="Center"
+                                           Margin="12,0,2,0"/>
+
+                                <ComboBox x:Name="cmbElementFilter"
+                                          Width="135"
+                                          SelectedIndex="10">
+                                    <ComboBoxItem Content="Pipe"/>
+                                    <ComboBoxItem Content="Pipe Fitting"/>
+                                    <ComboBoxItem Content="Pipe Accessory"/>
+                                    <ComboBoxItem Content="Flex Pipe"/>
+                                    <ComboBoxItem Content="Duct"/>
+                                    <ComboBoxItem Content="Duct Fitting"/>
+                                    <ComboBoxItem Content="Duct Accessory"/>
+                                    <ComboBoxItem Content="Flex Duct"/>
+                                    <ComboBoxItem Content="All Pipe"/>
+                                    <ComboBoxItem Content="All Duct"/>
+                                    <ComboBoxItem Content="Both"/>
+                                    <ComboBoxItem Content="All"/>
+                                </ComboBox>
+
+                                <TextBlock Text="Search"
+                                           VerticalAlignment="Center"
+                                           Margin="12,0,2,0"/>
+
+                                <TextBox x:Name="txtElementSearch"
+                                         Width="260"
+                                         ToolTip="Search active view element table"/>
+                            </StackPanel>
+
+                            <TextBlock x:Name="txtActiveViewInfo"
+                                       DockPanel.Dock="Right"
+                                       Text="Active view not refreshed"
+                                       Foreground="#64748B"
+                                       VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </GroupBox>
+
+                    <!-- Active element columns are generated by script.py -->
+                    <GroupBox Grid.Row="1" Header="Pipe / Duct Elements in Active View">
+                        <DataGrid x:Name="dgActiveElements"
+                                  AutoGenerateColumns="False"
+                                  ItemsSource="{Binding FilteredActiveElements}"
+                                  SelectionMode="Extended"
+                                  FrozenColumnCount="2"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  CanUserResizeColumns="True"
+                                  CanUserSortColumns="True"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Auto"/>
+                    </GroupBox>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <!-- FOOTER STATUS -->
+        <Border Grid.Row="2"
+                Background="#E5E7EB"
+                CornerRadius="4"
+                Padding="8"
+                Margin="0,8,0,0">
+            <DockPanel>
+                <TextBlock x:Name="txtStatus"
+                           DockPanel.Dock="Left"
+                           Text="Ready"
+                           VerticalAlignment="Center"
+                           Foreground="#374151"/>
+
+                <StackPanel DockPanel.Dock="Right"
+                            Orientation="Horizontal">
+                    <Button x:Name="btnClose"
+                            Content="Close"
+                            Width="100"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

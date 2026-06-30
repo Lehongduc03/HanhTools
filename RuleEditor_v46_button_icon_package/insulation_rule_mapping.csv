@@ -1,0 +1,6 @@
+﻿Enabled,RuleColumnName,RevitFieldName,Operator,ValueSource,ValueType,Note
+TRUE,System,System Name,Equals,RevitDropdown,Text,
+TRUE,Size,Overall Size,Equals,RevitDropdown,SizeText,Keep size text such as 100 mmø-80 mmø
+TRUE,Level,Level Name,Equals,RevitDropdown,Text,
+TRUE,Area,Installation Area,Contains,ManualOrDropdown,Text,
+TRUE,Workset,Workset,Equals,RevitDropdown,Text,
